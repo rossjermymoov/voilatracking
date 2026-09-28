@@ -212,6 +212,8 @@ export default function Home() {
             credentials={credentials}
             onBackToMapping={() => setActiveStep(2)}
             onOpenSettings={() => setIsSettingsOpen(true)}
+            onSavePreset={handleSavePreset}
+            presets={presets}
           />
         )}
       </main>

@@ -3,6 +3,7 @@ import {
   ApiCredentials,
   FieldMappingConfig,
   ProcessedRowResult,
+  MappingPreset,
 } from '@/types';
 import { buildQueueTrackingPayload } from '@/lib/mapper';
 import {
@@ -22,6 +23,10 @@ import {
   ChevronUp,
   Sliders,
   Sparkles,
+  Save,
+  BookmarkPlus,
+  FolderOpen,
+  X,
 } from 'lucide-react';
 import Papa from 'papaparse';
 
@@ -32,6 +37,8 @@ interface BatchProcessorProps {
   credentials: ApiCredentials;
   onBackToMapping: () => void;
   onOpenSettings: () => void;
+  onSavePreset?: (name: string) => void;
+  presets?: MappingPreset[];
 }
 
 export const BatchProcessor: React.FC<BatchProcessorProps> = ({
@@ -41,6 +48,8 @@ export const BatchProcessor: React.FC<BatchProcessorProps> = ({
   credentials,
   onBackToMapping,
   onOpenSettings,
+  onSavePreset,
+  presets = [],
 }) => {
   const [results, setResults] = useState<ProcessedRowResult[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -50,6 +59,13 @@ export const BatchProcessor: React.FC<BatchProcessorProps> = ({
   const [filterStatus, setFilterStatus] = useState<'all' | 'success' | 'error' | 'pending'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
+
+  // Template Save State
+  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+  const [templateName, setTemplateName] = useState(
+    mappingConfig.fileLevelCourier ? `${mappingConfig.fileLevelCourier} Template` : 'My Custom Template'
+  );
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   // Reference to abort or pause
   const isPausedRef = useRef(false);
@@ -79,10 +95,22 @@ export const BatchProcessor: React.FC<BatchProcessorProps> = ({
 
   const hasCredentials = Boolean(credentials.apiUser && credentials.apiToken);
 
+  const handleSaveTemplateSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!templateName.trim()) return;
+    if (onSavePreset) {
+      onSavePreset(templateName.trim());
+    }
+    setSaveSuccess(true);
+    setTimeout(() => {
+      setSaveSuccess(false);
+      setIsSaveModalOpen(false);
+    }, 1500);
+  };
+
   // Process a single row against the HeyVoila proxy
   const processSingleRow = async (item: ProcessedRowResult): Promise<ProcessedRowResult> => {
     if (item.errorMessage && item.status === 'error') {
-      // already pre-flight invalid
       return item;
     }
 
@@ -144,7 +172,6 @@ export const BatchProcessor: React.FC<BatchProcessorProps> = ({
     const queue = [...itemsToRun];
     const inFlight = new Set<Promise<void>>();
 
-    // Helper to process queue with concurrency pool
     const processQueue = async () => {
       while (queue.length > 0 && !isCancelledRef.current) {
         while (isPausedRef.current && !isCancelledRef.current) {
@@ -156,7 +183,6 @@ export const BatchProcessor: React.FC<BatchProcessorProps> = ({
         const currentItem = queue.shift();
         if (!currentItem) break;
 
-        // Mark as processing
         setResults((prev) =>
           prev.map((r) =>
             r.rowIndex === currentItem.rowIndex ? { ...r, status: 'processing' } : r
@@ -279,16 +305,25 @@ export const BatchProcessor: React.FC<BatchProcessorProps> = ({
                 </span>
               </span>
               <span className="text-slate-600 leading-relaxed block">
-                Your CSV mapping is set up and all {totalCount} shipments are prepared. Whenever you receive your HeyVoila API keys, click <strong>Connect API Keys</strong> below to execute the live queue requests.
+                Your CSV mapping is configured and all {totalCount} shipments are prepared. Click <strong>Save Template</strong> anytime to store this mapping profile, or <strong>Connect API Keys</strong> when you have your HeyVoila credentials.
               </span>
             </div>
           </div>
-          <button
-            onClick={onOpenSettings}
-            className="px-5 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-bold transition-all shadow-md shadow-brand-500/20 shrink-0 flex items-center space-x-1.5"
-          >
-            <span>Connect API Keys</span>
-          </button>
+          <div className="flex items-center space-x-2 shrink-0">
+            <button
+              onClick={() => setIsSaveModalOpen(true)}
+              className="px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 font-bold border border-slate-300 shadow-sm transition-all flex items-center space-x-1.5"
+            >
+              <BookmarkPlus className="w-4 h-4 text-brand-500" />
+              <span>Save Template</span>
+            </button>
+            <button
+              onClick={onOpenSettings}
+              className="px-5 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-bold transition-all shadow-md shadow-brand-500/20 flex items-center space-x-1.5"
+            >
+              <span>Connect API Keys</span>
+            </button>
+          </div>
         </div>
       ) : null}
 
@@ -306,12 +341,22 @@ export const BatchProcessor: React.FC<BatchProcessorProps> = ({
               )}
             </h3>
             <p className="text-xs text-slate-500 mt-1">
-              Auth Account: <span className="font-semibold text-slate-700 font-mono">{credentials.apiUser || 'Not Configured'}</span>
+              Auth Account: <span className="font-semibold text-slate-700 font-mono">{credentials.apiUser || 'Not Configured (Ready to Queue)'}</span>
               {credentials.authCompany && ` • Company: ${credentials.authCompany}`}
+              {mappingConfig.fileLevelCourier && ` • Courier: ${mappingConfig.fileLevelCourier}`}
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            {/* Quick Save Template Button on Step 3 */}
+            <button
+              onClick={() => setIsSaveModalOpen(true)}
+              className="px-4 py-2.5 rounded-xl bg-orange-50 hover:bg-orange-100 text-brand-700 border border-orange-200 font-bold text-xs transition-all flex items-center space-x-1.5 shadow-sm"
+            >
+              <Save className="w-4 h-4 text-brand-500" />
+              <span>Save Template</span>
+            </button>
+
             {!isProcessing ? (
               <button
                 onClick={handleStartAll}
@@ -699,6 +744,15 @@ export const BatchProcessor: React.FC<BatchProcessorProps> = ({
         <div className="flex items-center space-x-3">
           <button
             type="button"
+            onClick={() => setIsSaveModalOpen(true)}
+            className="px-4 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-all flex items-center space-x-2 shadow-sm"
+          >
+            <BookmarkPlus className="w-4 h-4 text-brand-500" />
+            <span>Save Template</span>
+          </button>
+
+          <button
+            type="button"
             onClick={handleExportCsv}
             disabled={processedCount === 0}
             className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-md transition-all flex items-center space-x-2 disabled:opacity-40 disabled:cursor-not-allowed"
@@ -708,6 +762,72 @@ export const BatchProcessor: React.FC<BatchProcessorProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Save Template Modal on Step 3 */}
+      {isSaveModalOpen && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-bold text-slate-900 flex items-center space-x-2">
+                <FolderOpen className="w-4 h-4 text-brand-500" />
+                <span>Save Mapping as Template</span>
+              </h4>
+              <button
+                type="button"
+                onClick={() => setIsSaveModalOpen(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-500">
+              Save this mapping setup (including File Courier: <strong>{mappingConfig.fileLevelCourier || 'DPD'}</strong>) as a reusable template for future uploads.
+            </p>
+
+            <form onSubmit={handleSaveTemplateSubmit} className="space-y-4">
+              <div>
+                <label className="text-xs font-semibold text-slate-700 block mb-1">
+                  Template Name
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={templateName}
+                  onChange={(e) => setTemplateName(e.target.value)}
+                  placeholder="e.g. DPD Customer Export"
+                  className="w-full px-3.5 py-2 rounded-xl text-xs border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                />
+              </div>
+
+              {saveSuccess ? (
+                <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-800 text-xs font-semibold flex items-center space-x-1.5 border border-emerald-200">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  <span>Template saved successfully!</span>
+                </div>
+              ) : null}
+
+              <div className="flex items-center justify-end space-x-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsSaveModalOpen(false)}
+                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={!templateName.trim() || saveSuccess}
+                  className="px-4 py-2 rounded-xl bg-brand-500 hover:bg-brand-600 text-white text-xs font-bold shadow-md shadow-brand-500/20 flex items-center space-x-1.5"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>Save Template</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
