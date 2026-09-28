@@ -7,10 +7,13 @@ import {
   Download,
   AlertCircle,
   CheckCircle,
-  Trash2,
   Table,
   ArrowRight,
+  FolderOpen,
+  Sparkles,
+  Layers,
 } from 'lucide-react';
+import { MappingPreset } from '@/types';
 
 interface CsvUploaderProps {
   onDataLoaded: (data: {
@@ -21,6 +24,9 @@ interface CsvUploaderProps {
   currentFileName?: string;
   totalRows?: number;
   onProceedToMapping: () => void;
+  presets: MappingPreset[];
+  selectedPresetId?: string;
+  onSelectPreset: (preset: MappingPreset | null) => void;
 }
 
 export const CsvUploader: React.FC<CsvUploaderProps> = ({
@@ -28,6 +34,9 @@ export const CsvUploader: React.FC<CsvUploaderProps> = ({
   currentFileName,
   totalRows = 0,
   onProceedToMapping,
+  presets,
+  selectedPresetId,
+  onSelectPreset,
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -99,13 +108,24 @@ export const CsvUploader: React.FC<CsvUploaderProps> = ({
     }
   };
 
+  const handlePresetChange = (presetId: string) => {
+    if (!presetId) {
+      onSelectPreset(null);
+    } else {
+      const found = presets.find((p) => p.id === presetId);
+      if (found) {
+        onSelectPreset(found);
+      }
+    }
+  };
+
   const downloadSampleCsv = () => {
     const sampleContent =
       `Tracking_Number,Courier,Order_Reference,Customer_Name,Phone,Email,Company,Address_1,Address_2,City,County,Postcode,Country,Collection_Date\n` +
-      `1Z9999999999999999,AmazonShipping,ORD-8801,John Doe,+447700900001,john.doe@example.com,Acme Co,10 Downing Street,,London,Greater London,SW1A 2AA,GB,2026-09-22T10:00:00Z\n` +
-      `JD0146000000000000,DHL,ORD-8802,Sarah Jenkins,+447700900002,sarah@example.com,,24 Baker Street,Apt 3,London,,NW1 6XE,GB,2026-09-22T11:30:00Z\n` +
-      `09445839201948,DPD,ORD-8803,Michael Smith,+46701234567,michael@example.se,,Ekeredsvaegen 132,,Lerum,,443 50,SE,2026-09-22T12:00:00Z\n` +
-      `123456789;987654321,AmazonShipping,ORD-8804,Laura Croft,+12025550199,laura@croftexpeditions.com,Croft Manor,Park Lane,,Manchester,,M1 1AA,GB,2026-09-22T14:15:00Z`;
+      `1Z9999999999999999,DPD,ORD-8801,John Doe,+447700900001,john.doe@example.com,Acme Co,10 Downing Street,,London,Greater London,SW1A 2AA,GB,2026-09-28T10:00:00Z\n` +
+      `JD0146000000000000,DPD,ORD-8802,Sarah Jenkins,+447700900002,sarah@example.com,,24 Baker Street,Apt 3,London,,NW1 6XE,GB,2026-09-28T11:30:00Z\n` +
+      `09445839201948,DPD,ORD-8803,Michael Smith,+46701234567,michael@example.se,,Ekeredsvaegen 132,,Lerum,,443 50,SE,2026-09-28T12:00:00Z\n` +
+      `123456789;987654321,DPD,ORD-8804,Laura Croft,+12025550199,laura@croftexpeditions.com,Croft Manor,Park Lane,,Manchester,,M1 1AA,GB,2026-09-28T14:15:00Z`;
 
     const blob = new Blob([sampleContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -116,6 +136,8 @@ export const CsvUploader: React.FC<CsvUploaderProps> = ({
     link.click();
     document.body.removeChild(link);
   };
+
+  const activePreset = presets.find((p) => p.id === selectedPresetId);
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
@@ -146,10 +168,10 @@ export const CsvUploader: React.FC<CsvUploaderProps> = ({
 
           <div>
             <h3 className="text-lg font-bold text-slate-900">
-              {currentFileName ? 'Replace CSV file' : 'Upload your Shipments CSV'}
+              {currentFileName ? 'Replace CSV file' : 'Upload Any Courier Shipments CSV'}
             </h3>
             <p className="text-sm text-slate-500 mt-1 max-w-md mx-auto">
-              Drag and drop your spreadsheet file here, or click to browse from your computer.
+              Drag and drop any spreadsheet here, or click to browse. Any column format is supported.
             </p>
           </div>
 
@@ -159,10 +181,48 @@ export const CsvUploader: React.FC<CsvUploaderProps> = ({
               <span>Comma-separated (.csv)</span>
             </span>
             <span>•</span>
-            <span>UTF-8 encoded</span>
+            <span>Any Column Headers</span>
             <span>•</span>
             <span>Up to 50,000 rows</span>
           </div>
+        </div>
+      </div>
+
+      {/* CHOOSE TEMPLATE DROPDOWN BOX */}
+      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 rounded-xl bg-orange-100 text-brand-600 flex items-center justify-center font-bold shrink-0">
+            <FolderOpen className="w-5 h-5" />
+          </div>
+          <div>
+            <label htmlFor="choose-template-select" className="text-xs font-bold text-slate-900 flex items-center space-x-2">
+              <span>Choose Mapping Template (Optional)</span>
+              {activePreset && (
+                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                  Applied
+                </span>
+              )}
+            </label>
+            <p className="text-xs text-slate-500">
+              Select a saved template to automatically map columns when you upload your file.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center space-x-2 w-full sm:w-auto">
+          <select
+            id="choose-template-select"
+            value={selectedPresetId || ''}
+            onChange={(e) => handlePresetChange(e.target.value)}
+            className="w-full sm:w-64 px-3.5 py-2 rounded-xl border border-slate-300 text-xs font-semibold bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
+          >
+            <option value="">-- No Template (Auto-Detect Headers) --</option>
+            {presets.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name} {p.fileLevelCourier ? `(${p.fileLevelCourier})` : ''}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -170,7 +230,7 @@ export const CsvUploader: React.FC<CsvUploaderProps> = ({
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-xl bg-slate-100 border border-slate-200 text-xs">
         <div className="flex items-center space-x-2 text-slate-600">
           <FileText className="w-4 h-4 text-brand-500" />
-          <span>Need a test file? Download our pre-formatted sample CSV template.</span>
+          <span>Need a test file? Download a sample CSV template with test data.</span>
         </div>
         <button
           type="button"

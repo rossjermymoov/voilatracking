@@ -264,24 +264,33 @@ export const BatchProcessor: React.FC<BatchProcessorProps> = ({
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
-      {/* Top Credentials Alert if Missing */}
-      {!hasCredentials && (
-        <div className="p-4 rounded-2xl bg-amber-50 border border-amber-300 text-amber-900 text-xs flex items-center justify-between shadow-sm">
-          <div className="flex items-center space-x-3">
-            <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
-            <div>
-              <span className="font-bold text-sm block">HeyVoila API Credentials Missing</span>
-              <span>Please configure your API User and Token before starting the queue runner.</span>
+      {/* Top Status Card: Ready to go / Connect API Keys */}
+      {!hasCredentials ? (
+        <div className="p-5 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-amber-500/10 to-orange-500/10 border-2 border-emerald-300 text-slate-800 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+          <div className="flex items-start space-x-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold shrink-0">
+              <CheckCircle2 className="w-5 h-5" />
+            </div>
+            <div className="space-y-0.5">
+              <span className="font-bold text-sm text-slate-900 block flex items-center space-x-2">
+                <span>Mapping Completed & Ready to Queue</span>
+                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                  {totalCount} Shipments Ready
+                </span>
+              </span>
+              <span className="text-slate-600 leading-relaxed block">
+                Your CSV mapping is set up and all {totalCount} shipments are prepared. Whenever you receive your HeyVoila API keys, click <strong>Connect API Keys</strong> below to execute the live queue requests.
+              </span>
             </div>
           </div>
           <button
             onClick={onOpenSettings}
-            className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold transition-all shadow-sm shrink-0"
+            className="px-5 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-bold transition-all shadow-md shadow-brand-500/20 shrink-0 flex items-center space-x-1.5"
           >
-            Enter API Keys
+            <span>Connect API Keys</span>
           </button>
         </div>
-      )}
+      ) : null}
 
       {/* Control Dashboard Card */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6">

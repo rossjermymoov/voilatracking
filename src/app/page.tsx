@@ -53,6 +53,7 @@ export default function Home() {
 
   // Presets State
   const [presets, setPresets] = useState<MappingPreset[]>([]);
+  const [selectedPresetId, setSelectedPresetId] = useState<string>('');
 
   // Load credentials and presets on mount
   useEffect(() => {
@@ -65,6 +66,20 @@ export default function Home() {
     saveCredentials(newCreds);
   };
 
+  const handleSelectPreset = (preset: MappingPreset | null) => {
+    if (!preset) {
+      setSelectedPresetId('');
+      return;
+    }
+    setSelectedPresetId(preset.id);
+    setMappingConfig((prev) => ({
+      ...prev,
+      fileLevelCourier: preset.fileLevelCourier || preset.defaultCourier || prev.fileLevelCourier || 'DPD',
+      mappings: preset.mappings,
+      fallbacks: preset.fallbacks,
+    }));
+  };
+
   const handleDataLoaded = (data: {
     fileName: string;
     headers: string[];
@@ -73,6 +88,20 @@ export default function Home() {
     setFileName(data.fileName);
     setHeaders(data.headers);
     setRows(data.rows);
+
+    // If a preset is already selected, apply it, else auto-detect
+    if (selectedPresetId) {
+      const preset = presets.find((p) => p.id === selectedPresetId);
+      if (preset) {
+        setMappingConfig((prev) => ({
+          ...prev,
+          fileLevelCourier: preset.fileLevelCourier || preset.defaultCourier || prev.fileLevelCourier || 'DPD',
+          mappings: preset.mappings,
+          fallbacks: preset.fallbacks,
+        }));
+        return;
+      }
+    }
 
     // Run auto-mapping
     const detected = autoDetectMappings(data.headers);
@@ -152,6 +181,9 @@ export default function Home() {
             currentFileName={fileName}
             totalRows={rows.length}
             onProceedToMapping={() => setActiveStep(2)}
+            presets={presets}
+            selectedPresetId={selectedPresetId}
+            onSelectPreset={handleSelectPreset}
           />
         )}
 
