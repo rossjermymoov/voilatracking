@@ -82,11 +82,11 @@ export const HEYVOILA_FIELDS: FieldDefinition[] = [
   },
   {
     key: 'courier_key',
-    label: 'Courier Key / Code (per row)',
+    label: 'Courier Carrier (Row-level override)',
     section: 'Required / Tracking',
-    required: false,
-    description: 'Specific courier for this row (e.g. DHL, RoyalMail, DPD). If blank, default selected courier is used.',
-    example: 'DHL / DPD / AmazonShipping',
+    required: true,
+    description: 'Courier for this row (e.g. DPD, DHL, RoyalMail). If unmapped, uses the File-Level Courier selected above.',
+    example: 'DPD / DHL / AmazonShipping',
     aliases: [
       'courier',
       'courier_key',
@@ -96,6 +96,7 @@ export const HEYVOILA_FIELDS: FieldDefinition[] = [
       'shipping_provider',
       'shipper',
       'courier_name',
+      'service_carrier',
     ],
   },
   {

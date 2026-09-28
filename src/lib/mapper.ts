@@ -101,12 +101,17 @@ export function buildQueueTrackingPayload(
 } {
   const errors: string[] = [];
 
-  // Determine courier
+  // Determine courier (Priority: Row value -> File-level courier -> Fallback value -> Default creds)
   const rowCourier = getFieldValue(row, 'courier_key', config);
-  const courierKey = rowCourier || creds.defaultCourier || 'AmazonShipping';
+  const courierKey =
+    rowCourier ||
+    config.fileLevelCourier ||
+    config.fallbacks['courier_key'] ||
+    creds.defaultCourier ||
+    '';
 
   if (!courierKey) {
-    errors.push('No courier key specified for this row and no default courier set');
+    errors.push('Courier carrier is required (Select a File-Level Courier like DPD or map a CSV column)');
   }
 
   // Tracking codes

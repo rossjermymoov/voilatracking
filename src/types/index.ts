@@ -79,6 +79,7 @@ export interface FieldDefinition {
 }
 
 export interface FieldMappingConfig {
+  fileLevelCourier?: string; // e.g. DPD, DHL, etc. to apply to all rows in file
   mappings: Record<HeyVoilaFieldKey, string>; // HeyVoilaFieldKey -> CSV column header name (or empty if unmapped)
   fallbacks: Record<HeyVoilaFieldKey, string>; // HeyVoilaFieldKey -> constant fallback value if empty in CSV
   delimiter?: string; // delimiter for comma/semicolon separated tracking codes
@@ -87,6 +88,7 @@ export interface FieldMappingConfig {
 export interface MappingPreset {
   id: string;
   name: string;
+  fileLevelCourier?: string;
   mappings: Record<HeyVoilaFieldKey, string>;
   fallbacks: Record<HeyVoilaFieldKey, string>;
   defaultCourier?: string;

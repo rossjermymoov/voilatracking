@@ -87,6 +87,7 @@ export default function Home() {
     const newPreset: MappingPreset = {
       id: `preset_${Date.now()}`,
       name,
+      fileLevelCourier: mappingConfig.fileLevelCourier || credentials.defaultCourier || 'DPD',
       mappings: mappingConfig.mappings,
       fallbacks: mappingConfig.fallbacks,
       defaultCourier: credentials.defaultCourier,
@@ -98,6 +99,7 @@ export default function Home() {
   const handleLoadPreset = (preset: MappingPreset) => {
     setMappingConfig((prev) => ({
       ...prev,
+      fileLevelCourier: preset.fileLevelCourier || preset.defaultCourier || prev.fileLevelCourier,
       mappings: preset.mappings,
       fallbacks: preset.fallbacks,
     }));
@@ -118,11 +120,15 @@ export default function Home() {
     if (step === 1) return true;
     if (step === 2) return rows.length > 0;
     if (step === 3) {
-      return (
-        rows.length > 0 &&
-        (Boolean(mappingConfig.mappings['tracking_codes']) ||
-          Boolean(mappingConfig.fallbacks['tracking_codes']))
-      );
+      const hasTracking =
+        Boolean(mappingConfig.mappings['tracking_codes']) ||
+        Boolean(mappingConfig.fallbacks['tracking_codes']);
+      const hasCourier =
+        Boolean(mappingConfig.fileLevelCourier) ||
+        Boolean(mappingConfig.mappings['courier_key']) ||
+        Boolean(mappingConfig.fallbacks['courier_key']) ||
+        Boolean(credentials.defaultCourier);
+      return rows.length > 0 && hasTracking && hasCourier;
     }
     return false;
   };
