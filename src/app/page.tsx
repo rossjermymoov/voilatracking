@@ -152,6 +152,7 @@ export default function Home() {
         {activeStep === 2 && (
           <FieldMapper
             csvHeaders={headers}
+            sampleRow={rows[0]}
             mappingConfig={mappingConfig}
             onChangeMapping={setMappingConfig}
             presets={presets}
